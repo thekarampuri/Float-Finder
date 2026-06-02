@@ -9,4 +9,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getVersion: () => process.versions.electron,
   // Platform info (useful for platform-specific UI tweaks)
   platform: process.platform,
+  // File operations
+  showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
+  saveFile: (filePath, dataBuffer) => ipcRenderer.invoke('save-file', filePath, dataBuffer),
+  // Licensing
+  getMachineId: () => ipcRenderer.invoke('get-machine-id'),
+  submitLicense: (key) => ipcRenderer.invoke('submit-license', key),
+  quitApp: () => ipcRenderer.send('quit-app')
 });

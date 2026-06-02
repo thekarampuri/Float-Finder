@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Float Finder - Product Activation</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    background: #f0f0f0; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh;
+    color: #333;
+  }
+  .container {
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    width: 480px;
+    text-align: center;
+  }
+  h2 { margin-bottom: 15px; color: #1565C0; }
+  p { font-size: 14px; margin-bottom: 20px; color: #666; }
+  .field-group { text-align: left; margin-bottom: 15px; }
+  .field-group label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #444; }
+  
+  .machine-id-container {
+    display: flex;
+    gap: 8px;
+  }
+  input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #f9f9f9;
+  }
+  input[readonly] { color: #555; }
+  
+  button {
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background: #757575;
+    color: #fff;
+    transition: background 0.2s;
+  }
+  button:hover { background: #555; }
+  
+  .btn-primary { background: #1565C0; width: 100%; margin-top: 10px; font-size: 15px; }
+  .btn-primary:hover { background: #0D47A1; }
+  
+  .btn-copy { background: #1565C0; }
+  .btn-copy:hover { background: #0D47A1; }
+
+  .btn-quit { background: transparent; color: #666; border: 1px solid #ccc; margin-top: 10px; width: 100%; }
+  .btn-quit:hover { background: #e0e0e0; color: #333; }
+
+  #errorMsg {
+    color: #D32F2F;
+    font-size: 13px;
+    margin-top: 15px;
+    min-height: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Software Activation</h2>
+  <p>Please send your Machine ID to the administrator to receive a valid License Key.</p>
+  
+  <div class="field-group">
+    <label>Machine ID</label>
+    <div class="machine-id-container">
+      <input type="text" id="machineId" readonly value="Loading...">
+      <button class="btn-copy" onclick="copyId()" title="Copy to clipboard">📋 Copy</button>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label>License Key</label>
+    <input type="text" id="licenseKey" placeholder="Paste your license key here...">
+  </div>
+
+  <div id="errorMsg"></div>
+
+  <button class="btn-primary" onclick="activate()">Activate</button>
+  <button class="btn-quit" onclick="quit()">Exit Application</button>
+</div>
+
+<script>
+  // On load, get the machine ID
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const mid = await window.electronAPI.getMachineId();
+      document.getElementById('machineId').value = mid;
+    } catch (e) {
+      document.getElementById('machineId').value = 'ERROR-LOADING-ID';
+    }
+  });
+
+  function copyId() {
+    const el = document.getElementById('machineId');
+    el.select();
+    document.execCommand('copy');
+    const btn = document.querySelector('.btn-copy');
+    btn.textContent = '✓ Copied';
+    setTimeout(() => btn.textContent = '📋 Copy', 2000);
+  }
+
+  async function activate() {
+    const key = document.getElementById('licenseKey').value.trim();
+    const errorMsg = document.getElementById('errorMsg');
+    if (!key) {
+      errorMsg.textContent = 'Please enter a license key.';
+      return;
+    }
+    errorMsg.textContent = 'Verifying...';
+    
+    try {
+      const success = await window.electronAPI.submitLicense(key);
+      if (success) {
+        errorMsg.style.color = '#388E3C';
+        errorMsg.textContent = 'Activation successful! Loading...';
+        // The main process will route us to FloatFinder.html automatically.
+      } else {
+        errorMsg.style.color = '#D32F2F';
+        errorMsg.textContent = 'Invalid license key for this machine.';
+      }
+    } catch (e) {
+      errorMsg.style.color = '#D32F2F';
+      errorMsg.textContent = 'Error during verification.';
+    }
+  }
+
+  function quit() {
+    window.electronAPI.quitApp();
+  }
+</script>
+
+</body>
+</html>

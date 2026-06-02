@@ -26,6 +26,7 @@
     },
     "files": [
       "FloatFinder.html",
+      "License.html",
       "main.js",
       "preload.js",
       "assets/**",

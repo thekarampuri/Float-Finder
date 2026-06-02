@@ -1,6 +1,52 @@
-const { app, BrowserWindow, Menu, dialog, shell } = require('electron');
+const { app, BrowserWindow, Menu, dialog, shell, ipcMain } = require('electron');
 const path = require('path');
 const fs   = require('fs');
+const crypto = require('crypto');
+const { execSync } = require('child_process');
+const os = require('os');
+
+const PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEfNJfHNyv7RebIz61Hp/p1M5kHw4q
+QstAgLPJGcd+9Tnlua4WqTWmTWZem/uqZj62kan7eRbCDzVU+KPm32sS4Q==
+-----END PUBLIC KEY-----`;
+
+function getMachineId() {
+  try {
+    let uuid = '', cpu = '', disk = '';
+    if (process.platform === 'win32') {
+      try { uuid = execSync('wmic csproduct get uuid').toString().split('\n')[1].trim(); } catch(e){}
+      try { cpu = execSync('wmic cpu get processorid').toString().split('\n')[1].trim(); } catch(e){}
+      try { disk = execSync('wmic diskdrive get serialnumber').toString().split('\n')[1].trim(); } catch(e){}
+    }
+    let rawId = `${uuid}|${cpu}|${disk}`;
+    if (rawId === '||') {
+      const net = os.networkInterfaces();
+      let mac = '';
+      for (const key in net) {
+        const iface = net[key].find(details => !details.internal && details.mac && details.mac !== '00:00:00:00:00:00');
+        if (iface) { mac = iface.mac; break; }
+      }
+      rawId = `${mac}|${os.hostname()}`;
+    }
+    
+    const hash = crypto.createHash('sha256').update(rawId).digest('hex').toUpperCase();
+    return `${hash.substring(0,8)}-${hash.substring(8,16)}-${hash.substring(16,24)}-${hash.substring(24,32)}`;
+  } catch (error) {
+    return 'UNKNOWN-MACHINE-ID';
+  }
+}
+
+function verifyLicense(licenseKeyBase64) {
+  try {
+    if (!licenseKeyBase64) return false;
+    const machineId = getMachineId();
+    const verify = crypto.createVerify('SHA256');
+    verify.update(machineId);
+    return verify.verify(PUBLIC_KEY, licenseKeyBase64, 'base64');
+  } catch (err) {
+    return false;
+  }
+}
 
 // Keep a global reference to prevent garbage collection
 let mainWindow;
@@ -30,8 +76,23 @@ function createWindow() {
 
   mainWindow = new BrowserWindow(winOptions);
 
-  // Load the single-file app
-  mainWindow.loadFile('FloatFinder.html');
+  // Check license
+  const licensePath = path.join(app.getPath('userData'), 'license.dat');
+  let hasLicense = false;
+  try {
+    if (fs.existsSync(licensePath)) {
+      const savedKey = fs.readFileSync(licensePath, 'utf8').trim();
+      if (verifyLicense(savedKey)) {
+        hasLicense = true;
+      }
+    }
+  } catch (e) {}
+
+  if (hasLicense) {
+    mainWindow.loadFile('FloatFinder.html');
+  } else {
+    mainWindow.loadFile('License.html');
+  }
 
   // Reveal window only once content is painted — eliminates white flash
   mainWindow.once('ready-to-show', () => {
@@ -114,6 +175,30 @@ function buildMenu() {
 }
 
 // ── App Lifecycle ─────────────────────────────────────────────
+ipcMain.handle('show-save-dialog', async (event, options) => {
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, options);
+  return { canceled, filePath };
+});
+ipcMain.handle('save-file', async (event, filePath, buffer) => {
+  fs.writeFileSync(filePath, Buffer.from(buffer));
+  return true;
+});
+
+// Licensing IPC
+ipcMain.handle('get-machine-id', () => getMachineId());
+ipcMain.handle('submit-license', (event, key) => {
+  if (verifyLicense(key)) {
+    const licensePath = path.join(app.getPath('userData'), 'license.dat');
+    fs.writeFileSync(licensePath, key.trim());
+    mainWindow.loadFile('FloatFinder.html');
+    return true;
+  }
+  return false;
+});
+ipcMain.on('quit-app', () => {
+  app.quit();
+});
+
 app.whenReady().then(() => {
   buildMenu();
   createWindow();
