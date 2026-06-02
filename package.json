@@ -1,0 +1,51 @@
+{
+  "name": "float-finder",
+  "version": "1.0.0",
+  "description": "Float Finder - Textile float detection tool for Jacquard/embroidery design",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64",
+    "build:portable": "electron-builder --win portable --x64"
+  },
+  "keywords": ["textile", "jacquard", "float-finder", "weaving"],
+  "author": "Balaji and Brother",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.balajiandbros.floatfinder",
+    "productName": "Float Finder",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Float Finder"
+    },
+    "files": [
+      "FloatFinder.html",
+      "main.js",
+      "preload.js",
+      "assets/**"
+    ]
+  }
+}
