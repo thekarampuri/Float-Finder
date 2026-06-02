@@ -5,8 +5,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win --x64",
-    "build:portable": "electron-builder --win portable --x64"
+    "dist": "electron-builder --win --x64",
+    "dist:portable": "electron-builder --win portable --x64",
+    "dist:installer": "electron-builder --win nsis --x64"
   },
   "keywords": ["textile", "jacquard", "float-finder", "weaving"],
   "author": "Balaji and Brother",
@@ -18,9 +19,21 @@
   "build": {
     "appId": "com.balajiandbros.floatfinder",
     "productName": "Float Finder",
+    "copyright": "Copyright © 2026 Balaji and Brother",
     "directories": {
-      "output": "dist"
+      "output": "release",
+      "buildResources": "assets"
     },
+    "files": [
+      "FloatFinder.html",
+      "main.js",
+      "preload.js",
+      "assets/**",
+      "!assets/README.txt",
+      "!node_modules/**",
+      "!release/**",
+      "!.git/**"
+    ],
     "win": {
       "target": [
         {
@@ -32,20 +45,23 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Float Finder"
+      "shortcutName": "Float Finder",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "deleteAppDataOnUninstall": false
     },
-    "files": [
-      "FloatFinder.html",
-      "main.js",
-      "preload.js",
-      "assets/**"
-    ]
+    "portable": {
+      "artifactName": "Float-Finder-Portable-${version}.exe"
+    },
+    "artifactName": "Float-Finder-Setup-${version}.exe"
   }
 }

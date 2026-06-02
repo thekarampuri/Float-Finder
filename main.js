@@ -1,41 +1,45 @@
-const { app, BrowserWindow, Menu, shell } = require('electron');
+const { app, BrowserWindow, Menu, dialog, shell } = require('electron');
 const path = require('path');
+const fs   = require('fs');
 
 // Keep a global reference to prevent garbage collection
 let mainWindow;
 
+// Resolve icon path — skip gracefully if file doesn't exist
+const iconPath = path.join(__dirname, 'assets', 'icon.ico');
+const iconExists = fs.existsSync(iconPath);
+
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  const winOptions = {
     width: 1400,
     height: 900,
     minWidth: 900,
     minHeight: 600,
     title: 'Float Finder',
-    icon: path.join(__dirname, 'assets', 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      // Allow local file access for loading images from disk
-      webSecurity: false,
+      webSecurity: false,   // allow local file:// image access
     },
     backgroundColor: '#f0f0f0',
-    show: false, // Don't show until ready-to-show
-  });
+    show: false,            // show after ready-to-show for smooth launch
+  };
 
-  // Load the main HTML file
+  if (iconExists) winOptions.icon = iconPath;
+
+  mainWindow = new BrowserWindow(winOptions);
+
+  // Load the single-file app
   mainWindow.loadFile('FloatFinder.html');
 
-  // Show window smoothly once content is loaded
+  // Reveal window only once content is painted — eliminates white flash
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     mainWindow.focus();
   });
 
-  // Open DevTools in development (comment out for production)
-  // mainWindow.webContents.openDevTools();
-
-  // Handle external links — open in default browser instead of Electron
+  // Route any window.open() calls to the system browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
@@ -52,18 +56,19 @@ function buildMenu() {
     {
       label: 'File',
       submenu: [
+        { type: 'separator' },
         { role: 'quit', label: 'Exit' }
       ]
     },
     {
       label: 'View',
       submenu: [
-        { role: 'reload', label: 'Reload' },
-        { role: 'forceReload', label: 'Force Reload' },
+        { role: 'reload',        label: 'Reload' },
+        { role: 'forceReload',   label: 'Force Reload' },
         { type: 'separator' },
-        { role: 'zoomIn',  label: 'Zoom In'  },
-        { role: 'zoomOut', label: 'Zoom Out' },
-        { role: 'resetZoom', label: 'Reset Zoom' },
+        { role: 'zoomIn',        label: 'Zoom In'    },
+        { role: 'zoomOut',       label: 'Zoom Out'   },
+        { role: 'resetZoom',     label: 'Reset Zoom' },
         { type: 'separator' },
         { role: 'togglefullscreen', label: 'Toggle Fullscreen' }
       ]
@@ -73,7 +78,7 @@ function buildMenu() {
       submenu: [
         { role: 'minimize' },
         { role: 'maximize' },
-        { role: 'close' }
+        { role: 'close'    }
       ]
     },
     {
@@ -82,13 +87,22 @@ function buildMenu() {
         {
           label: 'About Float Finder',
           click: () => {
-            const { dialog } = require('electron');
             dialog.showMessageBox(mainWindow, {
               type: 'info',
               title: 'About Float Finder',
               message: 'Float Finder v16',
-              detail: 'A textile float detection tool for Jacquard/embroidery design.\n\nDeveloped for Balaji & Brother.',
-              buttons: ['OK']
+              detail: [
+                'A textile float detection tool for',
+                'Jacquard / embroidery design.',
+                '',
+                'Developed for Balaji & Brother.',
+                '',
+                `Electron: ${process.versions.electron}`,
+                `Node:     ${process.versions.node}`,
+                `Chrome:   ${process.versions.chrome}`,
+              ].join('\n'),
+              buttons: ['OK'],
+              ...(iconExists ? { icon: iconPath } : {})
             });
           }
         }
@@ -96,8 +110,7 @@ function buildMenu() {
     }
   ];
 
-  const menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
 // ── App Lifecycle ─────────────────────────────────────────────
@@ -105,13 +118,11 @@ app.whenReady().then(() => {
   buildMenu();
   createWindow();
 
-  // macOS: re-create window when dock icon clicked and no windows open
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
-// Quit when all windows are closed (except macOS)
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
