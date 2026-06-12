@@ -6,8 +6,8 @@ const { execSync } = require('child_process');
 const os = require('os');
 
 const PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEfNJfHNyv7RebIz61Hp/p1M5kHw4q
-QstAgLPJGcd+9Tnlua4WqTWmTWZem/uqZj62kan7eRbCDzVU+KPm32sS4Q==
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE2w+jELvMb3dvtKLVJ87jSwI1TThu
+FFC9ZjI14XzFCpgZ9q3GrfDdd6C2HFPBPmLlfkcCgqpWtGCua3NTt2iEhA==
 -----END PUBLIC KEY-----`;
 
 function getMachineId() {

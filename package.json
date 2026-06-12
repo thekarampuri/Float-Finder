@@ -58,7 +58,7 @@
       "shortcutName": "Float Finder",
       "installerIcon": "assets/icon.ico",
       "uninstallerIcon": "assets/icon.ico",
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": true
     },
     "portable": {
       "artifactName": "Float-Finder-Portable-${version}.exe"
